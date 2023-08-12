@@ -13,13 +13,18 @@ from models.review import Review
 from models import storage
 
 
-
 class HBNBCommand(cmd.Cmd):
     """command interpreter class."""
 
     prompt = '(hbnb) '
-    classes_dict = {"BaseModel": BaseModel, "State": State, "State": State,
-                    "City": City, "Amenity": Amenity, "Place": Place, "Review": Review, "User": User}
+    classes_dict = {"BaseModel": BaseModel,
+                    "State": State,
+                    "State": State,
+                    "City": City,
+                    "Amenity": Amenity,
+                    "Place": Place,
+                    "Review": Review,
+                    "User": User}
 
     def do_EOF(self, line):
         """EOF command to exit the program."""
@@ -34,18 +39,19 @@ class HBNBCommand(cmd.Cmd):
         pass
 
     def do_create(self, line):
-        """Creates a new instance of BaseModel, saves it
+        """Create a new instance of BaseModel, saves it
         (to the JSON file) and prints the id
         """
+
         if line == "":
             print("** class name missing **")
-        else:
-            try:
-                myclass = eval(line + "()")
-                myclass.save()
-                print(myclass.id)
-            except:
-                print("** class doesn't exist **")
+
+        if line not in HBNBCommand.classes_dict:
+            print("** class doesn't exist **")
+
+        myclass = eval(line + "()")
+        myclass.save()
+        print(myclass.id)
 
     def do_show(self, line):
         """Print the string representation of an instance
@@ -71,6 +77,7 @@ class HBNBCommand(cmd.Cmd):
         """Delete an instance based on the class name and id.
         (save the change into the JSON file).
         """
+
         line_vactor = line.split()
         if line_vactor == []:
             print("** class name missing **")
@@ -142,6 +149,55 @@ class HBNBCommand(cmd.Cmd):
                 setattr(object_class, line_vector[2],  eval(line_vector[3]))
                 objects_dict[object_key] = object_class.to_dict()
                 object_class.save()
+
+    def do_count(self, line):
+        """Display count of instances specified"""
+        if line in HBNBCommand.classes_dict:
+            count = 0
+            for key, objs in storage.all().items():
+                if line in key:
+                    count += 1
+            print(count)
+        else:
+            print("** class doesn't exist **")
+
+    def default(self, line):
+        """Handle Cmd methods."""
+        line_vector = line.split('.')
+        class_argument = line_vector[0]
+
+        if line_vector == []:
+            print("*** Unknown syntax: {}".format(line))
+            return
+
+        try:
+            line_vector = line_vector[1].split('(')
+            command = line_vector[0]
+
+            if command == 'all':  # <class name>.all()
+                HBNBCommand.do_all(self, class_argument)  # all BaseModel
+
+            elif command == 'count':  # <class name>.count()
+                HBNBCommand.do_count(self, class_argument)
+
+            elif command == 'show':  # <class name>.show(<id>)
+                line_vector = line_vector[1].split(')')
+                id_argument = line_vector[0].strip("'\"")
+                argument = class_argument + ' ' + id_argument
+                HBNBCommand.do_show(self, argument)  # show BaseModel 123
+
+            elif command == 'destroy':  # <class name>.destroy(<id>)
+                line_vector = line_vector[1].split(')')
+                id_argument = line_vector[0].strip("'\"")
+                argument = class_argument + ' ' + id_argument
+                HBNBCommand.do_destroy(self, argument)  # destroy BaseModel 123
+
+            else:
+                print("*** Unknown syntax: {}".format(line))
+                return
+
+        except IndexError:
+            print("*** Unknown syntax: {}".format(line))
 
 
 if __name__ == '__main__':
